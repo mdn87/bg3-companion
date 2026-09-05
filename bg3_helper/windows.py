@@ -7,6 +7,7 @@ from pathlib import Path
 import threading
 
 from .core import BridgeError, Rect, Window
+from .shortcuts import HOTKEY_BINDINGS
 
 
 def enable_dpi():
@@ -117,6 +118,13 @@ class WindowsDesktop:
     def foreground(self, target):
         return self.gui.GetForegroundWindow() == target.hwnd
 
+    def return_focus(self, target, source_hwnd):
+        # Called only by the user's Smart next move button. Never interrupt a
+        # different app the user has switched to while capture was running.
+        if self.gui.GetForegroundWindow() != source_hwnd or self.target() != target:
+            raise BridgeError("Focus changed since the companion button was pressed.")
+        self.gui.SetForegroundWindow(target.hwnd)
+
     def _visible(self, target):
         # Screen-region capture includes occluders. Reject overlapping unrelated windows
         # before reading pixels, including windows on a monitor with a negative origin.
@@ -218,9 +226,9 @@ class Hotkeys:
     def _run(self):
         user = ctypes.windll.user32
         self.thread_id = ctypes.windll.kernel32.GetCurrentThreadId()
-        for key_id, vk in ((1, 0x77), (2, 0x78), (3, 0x7B)):
+        for key_id, vk, label in HOTKEY_BINDINGS:
             if not user.RegisterHotKey(None, key_id, 0x4003, vk):
-                self.errors.append(f"Could not register Ctrl+Alt+F{vk - 0x6F}; use the panel.")
+                self.errors.append(f"Could not register {label}; use the panel.")
         msg = wintypes.MSG()
         try:
             while user.GetMessageW(ctypes.byref(msg), None, 0, 0) > 0:

@@ -12,6 +12,8 @@ from pathlib import Path
 
 from PIL import Image, ImageChops, ImageStat
 
+from .shortcuts import INPUT_SHORTCUT
+
 
 class BridgeError(Exception):
     pass
@@ -77,8 +79,9 @@ class Bridge:
         self.frame_time = 0.0
         self.used = True
         self.results = {}
-        self.note = "Capture the game, then ask in Codex what you want help with."
+        self.note = "Open BG3, then press Explain screen or Smart next move. Your result will appear here."
         self.last_error = ""
+        self.session = None
 
     @property
     def armed(self):
@@ -112,7 +115,8 @@ class Bridge:
             return {"target": target, "target_error": target_error,
                     "input_enabled": self.armed,
                     "input_seconds_remaining": max(0, int(self.armed_until - self.clock())) if self.armed else 0,
-                    "latest": self.frame, "note": self.note, "last_error": self.last_error}
+                    "latest": self.frame, "note": self.note, "last_error": self.last_error,
+                    "session": self.session.status() if self.session else None}
 
     def _capture(self):
         target = self.desktop.target()
@@ -175,7 +179,7 @@ class Bridge:
                     raise BridgeError("request_id was already used for a different action.")
                 return result
             if not self.armed:
-                raise BridgeError("Input is off. Enable it in the companion panel or with Ctrl+Alt+F9.")
+                raise BridgeError(f"Input is off. Allow actions in the companion panel or with {INPUT_SHORTCUT}.")
             if self.frame is None or request.get("frame_id") != self.frame["frame_id"]:
                 raise BridgeError("Action must reference the latest frame_id.")
             if self.used or self.clock() - self.frame_time > 60:
@@ -214,6 +218,10 @@ class Bridge:
                 raise BridgeError(f"The visible scene changed (difference {delta:.1f}). Capture again.")
             if self.stopped.is_set() or not self.armed:
                 raise BridgeError("Input was stopped.")
+            if self.session:
+                self.session.before_action(request)
+            elif request.get("smart_request_id"):
+                raise BridgeError("This companion has no active session request.")
             self.used = True
             result = {"request_id": request_id, "status": "outcome_unknown"}
             # Reserve before the first OS event. An uncertain result must never be replayed.

@@ -17,6 +17,16 @@ def main():
     sub.add_parser("capture", help="Capture the visible game window without switching focus")
     sub.add_parser("stop", help="Disable input immediately")
     sub.add_parser("doctor", help="Inspect local displays and BG3 windows; does not capture")
+    connect = sub.add_parser("connect", help="Link companion buttons to an existing Codex conversation")
+    connect.add_argument("thread_id")
+    smart = sub.add_parser("request", help="Submit one companion request to the linked conversation")
+    smart.add_argument("kind", choices=["explain", "smart", "connection_test"])
+    smart.add_argument("--objective", default="")
+    claim = sub.add_parser("claim", help="Check and claim a queued companion request")
+    claim.add_argument("request_id")
+    finish = sub.add_parser("finish", help="Return the result to the companion and finish the request")
+    finish.add_argument("request_id")
+    finish.add_argument("--text", required=True)
     note = sub.add_parser("note", help="Show this session's advice in the panel")
     note.add_argument("text")
     crop = sub.add_parser("crop", help="Crop the latest full-resolution frame for inspection")
@@ -31,6 +41,7 @@ def main():
     action.add_argument("--button", choices=["left", "right", "middle"], default="left")
     action.add_argument("--key")
     action.add_argument("--steps", type=int)
+    action.add_argument("--smart-request", dest="smart_request_id", help="Companion request authorizing this gesture")
     args = parser.parse_args()
     try:
         from .transport import request
@@ -51,7 +62,7 @@ def main():
         elif args.command == "act":
             body = {"request_id": args.request_id or uuid.uuid4().hex, "frame_id": args.frame,
                     "kind": args.kind}
-            for name in ("x", "y", "button", "key", "steps"):
+            for name in ("x", "y", "button", "key", "steps", "smart_request_id"):
                 value = getattr(args, name)
                 if value is not None:
                     body[name] = value
@@ -60,6 +71,14 @@ def main():
             result = request(args.runtime, "crop", {n: getattr(args, n) for n in ("x", "y", "width", "height")})
         elif args.command == "note":
             result = request(args.runtime, "note", {"text": args.text})
+        elif args.command == "connect":
+            result = request(args.runtime, "connect", {"thread_id": args.thread_id})
+        elif args.command == "request":
+            result = request(args.runtime, "request", {"kind": args.kind, "objective": args.objective})
+        elif args.command == "claim":
+            result = request(args.runtime, "claim", {"request_id": args.request_id})
+        elif args.command == "finish":
+            result = request(args.runtime, "finish", {"request_id": args.request_id, "text": args.text})
         else:
             result = request(args.runtime, args.command)
         print(json.dumps(result, indent=2))

@@ -50,6 +50,17 @@ def create_server(bridge):
                 elif self.path == "/stop":
                     bridge.stop()
                     result = {"input_enabled": False}
+                elif self.path in {"/connect", "/request", "/claim", "/finish"}:
+                    if bridge.session is None:
+                        raise BridgeError("Session buttons are not connected in this bridge.")
+                    if self.path == "/connect":
+                        result = bridge.session.connect(body.get("thread_id"))
+                    elif self.path == "/request":
+                        result = bridge.session.submit(body.get("kind"), body.get("objective", ""))
+                    elif self.path == "/claim":
+                        result = bridge.session.claim(body.get("request_id"))
+                    else:
+                        result = bridge.session.finish(body.get("request_id"), body.get("text"))
                 elif self.path == "/note":
                     note = body.get("text")
                     if not isinstance(note, str) or len(note) > 6000:
@@ -83,7 +94,7 @@ def request(runtime: Path, operation: str, body=None):
         req = Request(f"http://127.0.0.1:{port}/{operation}",
                       data=json.dumps(body or {}).encode(),
                       headers={"Authorization": "Bearer " + info["token"], "Content-Type": "application/json"})
-        with urlopen(req, timeout=15) as response:
+        with urlopen(req, timeout=45 if operation == "request" else 15) as response:
             return json.load(response)
     except HTTPError as exc:
         try:

@@ -11,6 +11,7 @@ from PIL import Image, ImageTk
 from .core import Bridge, BridgeError
 from .transport import create_server, request
 from .windows import Hotkeys, WindowsDesktop
+from .session import SessionRequests, TERMINAL
 
 
 def run_panel(runtime: Path, test_target=False):
@@ -23,6 +24,7 @@ def run_panel(runtime: Path, test_target=False):
     else:
         raise BridgeError("A companion is already running for this runtime directory.")
     bridge = Bridge(desktop, runtime / "captures")
+    session = SessionRequests(bridge, runtime)
     server, descriptor = create_server(bridge)
     (runtime / "connection.json").write_text(json.dumps(descriptor), encoding="utf-8")
     threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -30,13 +32,13 @@ def run_panel(runtime: Path, test_target=False):
     root = tk.Tk()
     root.title("BG3 Companion" + (" — Test" if test_target else ""))
     root.configure(bg="#111722")
-    root.minsize(540, 850)
+    root.minsize(540, 920)
     # Start on the non-primary display when one is available, without changing display settings.
     import mss
     with mss.mss() as grabber:
         screens = grabber.monitors[1:]
     screen = next((m for m in screens if m["left"] != 0 or m["top"] != 0), screens[0])
-    root.geometry("560x900")
+    root.geometry("560x1000")
     root.update_idletasks()
     hwnd = desktop.user.GetAncestor(root.winfo_id(), 2)
     # Tk's negative geometry offsets mean distance from the right/bottom, not
@@ -82,20 +84,40 @@ def run_panel(runtime: Path, test_target=False):
 
     label("BG3 COMPANION", 10, "#87bea6")
     label("A second pair of eyes", 23, "#edf1f7")
-    label("Play on your main display. Ask for help in Codex.", wraplength=510)
+    label("Play on your main display. Get help here.", wraplength=510)
     target_label = label("Looking for the game…", 12, "#ebcf92", wraplength=500)
     input_label = label("Input off · advice and screenshots only", 11, "#87bea6")
 
+    label("What are you trying to do? (optional)", 10)
+    objective = tk.StringVar()
+    goal_entry = tk.Entry(body, textvariable=objective, bg="#1a2332", fg="#e0e7f0",
+                         insertbackground="white", font=("Segoe UI", 11), relief="flat")
+    goal_entry.pack(fill="x", ipady=7, pady=(0, 10))
+
+    def submit(kind):
+        goal = objective.get().strip()
+        revision = bridge.stop_revision
+        work.put(lambda: session.submit(kind, goal, return_focus=lambda target: desktop.return_focus(target, hwnd),
+                                        expected_stop_revision=revision))
+
+    smart_row = tk.Frame(body, bg="#111722")
+    smart_row.pack(fill="x", pady=(0, 8))
+    explain_button = ttk.Button(smart_row, text="Explain screen", command=lambda: submit("explain"))
+    explain_button.pack(side="left", fill="x", expand=True, padx=(0, 5))
+    smart_button = ttk.Button(smart_row, text="Smart next move", command=lambda: submit("smart"))
+    smart_button.pack(side="left", fill="x", expand=True, padx=(5, 0))
+
     row = tk.Frame(body, bg="#111722")
     row.pack(fill="x", pady=(2, 10))
-    ttk.Button(row, text="Capture now", command=lambda: work.put(bridge.capture)).pack(side="left")
-    arm_button = ttk.Button(row, text="Enable input", command=toggle)
+    ttk.Button(row, text="Capture only", command=lambda: work.put(bridge.capture)).pack(side="left")
+    arm_button = ttk.Button(row, text="Allow actions", command=toggle)
     arm_button.pack(side="left", padx=8)
     tk.Button(row, text="STOP", command=bridge.stop, bg="#963d46", fg="white",
               activebackground="#b64c58", relief="flat", font=("Segoe UI", 11, "bold"), padx=16, pady=9).pack(side="right")
-    label("Ctrl+Alt+F8  Capture    ·    F9  Toggle input    ·    F12  Stop\nHold Ctrl+Alt for all three shortcuts.", 10, wraplength=510)
+    session_label = label("Connecting to Codex…", 10, "#ebcf92", wraplength=500)
+    label("Optional shortcuts: hold Ctrl+Alt, then Numpad 0 to capture,\n1 to allow actions, or 2 to stop. Num Lock on.", 10, wraplength=510)
     preview = tk.Label(body, text="Your next game capture appears here", bg="#1a2332", fg="#8391a7",
-                       height=9, font=("Segoe UI", 11))
+                       height=6, font=("Segoe UI", 11))
     preview.pack(fill="x", pady=(0, 10))
     frame_label = label("No frame captured", 10, wraplength=510)
     advice = tk.Text(body, height=4, wrap="word", bg="#1a2332", fg="#e0e7f0",
@@ -127,16 +149,28 @@ def run_panel(runtime: Path, test_target=False):
             target_label.configure(text=(f"{target['title']}\n{target['rect']['width']} × {target['rect']['height']}" if target
                                          else "Waiting for Baldur’s Gate 3\nOpen the game and keep it visible."))
             armed = status["input_enabled"]
-            input_label.configure(text=(f"Input enabled · {status['input_seconds_remaining']} seconds left" if armed
-                                         else "Input off · advice and screenshots only"),
+            input_label.configure(text=(f"Smart next move may act · {status['input_seconds_remaining']} seconds left" if armed
+                                         else "Actions off · Smart next move gives advice"),
                                   fg="#ebcf92" if armed else "#87bea6")
-            arm_button.configure(text="Disable input" if armed else "Enable input")
+            arm_button.configure(text="Disable actions" if armed else "Allow actions")
+            session_status = status["session"]
+            active = session_status["request"]
+            busy = active is not None and active["status"] not in TERMINAL
+            for button in (smart_button, explain_button):
+                button.configure(state="disabled" if busy else "normal")
+            messages = {"sending": "Sending your request to Codex…", "queued": "Waiting for Codex to finish its current turn…",
+                        "working": "Codex is looking at the game…", "completed": "Result received from Codex.",
+                        "cancelled": "Request cancelled. Actions are off.", "expired": "Request expired. Press a button to try again.",
+                        "error": "Request could not finish. Check the message below."}
+            session_label.configure(text=(messages.get(active["status"], active["status"]) if active
+                                          else "Linked to Codex. Each button press requests help once." if session_status["thread_id"]
+                                          else "Ask Codex to connect this companion to the conversation."))
             frame = status["latest"]
             if frame and frame["frame_id"] != last_frame:
                 try:
                     with Image.open(frame["preview_path"]) as saved:
                         thumb = saved.copy()
-                    thumb.thumbnail((510, 260), Image.Resampling.LANCZOS)
+                    thumb.thumbnail((510, 220), Image.Resampling.LANCZOS)
                     photo = ImageTk.PhotoImage(thumb)
                     preview.configure(image=photo, text="", height=0)
                     preview.image = photo

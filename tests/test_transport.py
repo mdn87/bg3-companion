@@ -7,6 +7,7 @@ import pytest
 
 from bg3_helper.transport import create_server, request
 from bg3_helper.core import Bridge, BridgeError
+from bg3_helper.session import SessionRequests
 from test_core import Desktop
 
 
@@ -48,3 +49,22 @@ def test_cannot_arm_via_network(service):
     with pytest.raises(BridgeError, match="Unknown operation"):
         request(runtime, "arm")
     assert not bridge.armed
+
+
+def test_button_request_and_result_over_http(service, monkeypatch):
+    bridge, _, _, runtime = service
+    monkeypatch.delenv("CODEX_THREAD_ID", raising=False)
+    deliveries = []
+    SessionRequests(bridge, runtime, sender=lambda *args: deliveries.append(args))
+    request(runtime, "connect", {"thread_id": "11111111-1111-4111-8111-111111111111"})
+    item = request(runtime, "request", {"kind": "connection_test"})
+    assert len(deliveries) == 1
+    assert not item["allow_actions"]
+    body = {"request_id": item["request_id"]}
+    assert request(runtime, "claim", body)["status"] == "working"
+    assert request(runtime, "finish", {**body, "text": "Connected."}) == {"completed": True}
+    assert request(runtime, "status")["note"] == "Connected."
+    assert bridge.frame is None
+    assert not bridge.armed
+    with pytest.raises(BridgeError, match="completed"):
+        request(runtime, "claim", body)

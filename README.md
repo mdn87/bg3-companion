@@ -8,12 +8,21 @@ The project environment is already installed on 4070pc. Open `launch.cmd` to sta
 
 1. Open BG3 and keep its window visible on the main display. Borderless/windowed mode is the first test target; exclusive fullscreen and HDR need game-specific testing.
 2. Keep the companion and Codex on a different display.
-3. Ask Codex to capture the game and help with what is visible. The agent runs the capture command, reads the returned image, and replies in the conversation. It can also write advice into the companion panel.
-4. For delegated input, enable input in the companion or press **Ctrl+Alt+F9**, then return focus to BG3. The bridge never steals focus. **Ctrl+Alt+F12** or **STOP** disables input.
+3. Optionally enter what you are trying to do, then press **Explain screen** for advice or **Smart next move** for a suggested move. Each button captures the game and queues one request into the linked Codex conversation. Its answer appears in the companion.
+4. To let **Smart next move** carry out a small move, first choose **Allow actions**. A smart request submitted with actions allowed can perform up to three gestures, observing after each. If the next move is uncertain, it gives advice instead. The button returns focus from the companion to the game so input can work.
+5. **STOP** cancels the current request and disables input. **Allow actions** alone does not choose or execute anything.
 
-**Ctrl+Alt+F8** captures without switching focus. A hotkey capture saves an image locally; it does **not** wake an idle Codex session or generate advice by itself. Ask for analysis in the conversation. There is no continuous video processing, background model loop, or implemented automatic tactical decision-making in this version.
+The buttons are the main controls. Optional shortcuts are **Ctrl+Alt+Numpad 0** for Capture only, **Ctrl+Alt+Numpad 1** for Allow/Disable actions, and **Ctrl+Alt+Numpad 2** for STOP. Keep **Num Lock on**; these use the numeric keypad, not the top-row digits. **Capture only** and its hotkey save an image without requesting advice.
 
-The companion starts with input off. Enabling it lasts ten minutes; the agent still needs a specific delegated action. The implementation supports a single move, click, short key press, or scroll followed by an observation. Save/load hotkeys and arbitrary text/chords are not exposed.
+The companion starts with actions off. Enabling them lasts ten minutes. An advice-only request cannot gain input permission if actions are enabled after submission. STOP permanently cancels that request even if actions are subsequently re-enabled; submit a new request to continue. Requests expire after five minutes and are never retried automatically.
+
+This is a button-triggered assistant, with no continuous play or background model loop. The agent is instructed to avoid story choices, save/load, rest, and exit. These are reasoning instructions, not a semantic game-state detector; the bridge itself enforces target, focus, frame freshness, permission, cancellation, and a three-gesture limit. Save/load hotkeys and arbitrary text/chords are not exposed.
+
+## Connecting the buttons
+
+The companion uses the installed `codex queue` command to send requests to an existing Codex conversation. It uses that conversation's model and account limits; no separate model API or API key is configured. Keep Codex available. When the conversation is busy, a request can wait for the active turn to finish. This is not a latency guarantee for real-time gameplay.
+
+When launched from Codex, the companion remembers `CODEX_THREAD_ID` in ignored `.runtime/session.json`. Later launches reuse that link. To change it, run `connect THREAD_UUID` below. A saved link means a destination is configured; only a returned result confirms that the session answered. `request connection_test` sends a request without capturing or enabling input.
 
 ## Session commands
 
@@ -25,7 +34,11 @@ Run these from this project directory, using the project Python interpreter:
 ./.venv/Scripts/python.exe -m bg3_helper capture
 ./.venv/Scripts/python.exe -m bg3_helper note "My advice from the active session."
 ./.venv/Scripts/python.exe -m bg3_helper stop
+./.venv/Scripts/python.exe -m bg3_helper connect THREAD_UUID
+./.venv/Scripts/python.exe -m bg3_helper request connection_test
 ```
+
+Button requests tell the receiving session to run `claim REQUEST_ID` first and stop if the request was cancelled, expired, or replaced. The session uses `finish REQUEST_ID --text "Result"` to return advice to the panel. While handling a smart request, every action must include `--smart-request REQUEST_ID`; a missing or stale ID is rejected.
 
 `capture` returns JSON with `frame_id`, `preview_path`, `full_path`, the physical window rectangle, preview size, UTC capture time, and capture duration. Open `preview_path` with the agent's image-viewing tool. For small tooltips, inspect `full_path` or request a crop in **full-resolution** coordinates:
 
@@ -50,16 +63,18 @@ Every action needs the latest frame and a new request ID. Retry an uncertain **i
 - MSS captures the visible client region at native resolution. The bridge checks for unrelated windows overlapping that region; transparent, layered, non-activating cursor/highlight overlays are excluded from that check and can appear in captured pixels. It cannot see behind occlusion and does not promise atomic isolation from an overlay appearing during capture.
 - Physical coordinates support scaling and monitors with negative origins. Preview coordinates map back to the recorded client rectangle. A moved/resized/replaced target invalidates the frame.
 - Actions require input enabled, target focus, a frame at most 60 seconds old, and a visual recheck. A large scene change rejects the action; this check is conservative and does not prove that small objects or tooltips are unchanged. Animations can cause rejection.
+- Only a user press of **Smart next move** with actions allowed can return focus from the companion to the game. If focus has moved to another app, the companion leaves it alone and reports an error. Other capture/control commands do not activate windows.
 - Input uses Windows `SendInput` and releases keys/buttons within the gesture. It rejects user-held modifiers/buttons. No elevation is requested; if the game runs at a higher privilege level, Windows may reject input.
 - The panel's STOP and global stop hotkey remain available while a capture is running. They prevent subsequent gestures; they cannot retract an input batch Windows already accepted.
 - The local bridge binds only `127.0.0.1` on an ephemeral port. Its per-session capability stays in ignored `.runtime/connection.json`; browser-origin requests are rejected. Input can only be enabled from the native panel or hotkey, not over HTTP.
 - Full images, previews, metadata, and action records stay in ignored `.runtime/captures/`. Each capture stores both images and retention is manual for now. Do not commit captures or the connection descriptor.
+- Button request records and returned results stay in ignored `.runtime/requests/`. The queued preview is also attached to the linked Codex conversation for model analysis. The session takes a fresh capture before deciding or acting.
 
 If a screenshot is black, washed out, obscured, or stale, stop before acting. DirectX fullscreen capture, HDR color, and actual BG3 input acceptance must be validated on this machine. A later Windows Graphics Capture/DXGI backend can replace MSS if needed.
 
 ## Implementation and Tableforge relationship
 
-`windows.py` owns native targeting, capture, physical coordinates, and input. `core.py` owns frame identity, freshness, action validation, and results. `transport.py` provides a local authenticated command interface; `panel.py` and `__main__.py` are its human/session surfaces. BG3 process detection and game key choices are specific to this prototype.
+`windows.py` owns native targeting, capture, physical coordinates, and input. `core.py` owns frame identity, freshness, action validation, and results. `session.py` queues button requests and enforces their lifecycle and gesture budget. `transport.py` provides a local authenticated command interface; `panel.py` and `__main__.py` are its human/session surfaces. BG3 process detection and game key choices are specific to this prototype.
 
 Future Tableforge work can reuse the observation/action/result contracts, display handling, interruption behavior, and validation lessons. Tableforge should use its own application state and semantic commands where available. This prototype is not a direct Tableforge port, and no Tableforge, Aire, Fade, or remotedesk code/configuration was changed.
 
@@ -78,6 +93,6 @@ The disposable arena's **Run bridge self-test** button exercises actual software
 ./.venv/Scripts/python.exe -m bg3_helper --runtime .runtime/test-panel panel --test-target
 ```
 
-Tests use a fake desktop for negative monitor coordinates, frame invalidation, input policy, duplicate/uncertain results, and local HTTP behavior. Real game testing remains a separate acceptance step: capture the actual scene, inspect tooltip detail and colors, then try one harmless menu action.
+Tests use a fake desktop for negative monitor coordinates, frame invalidation, input policy, duplicate/uncertain results, local HTTP behavior, request cancellation/expiration, advice-only permissions, and gesture limits. Real game testing remains a separate acceptance step: capture the actual scene, inspect tooltip detail and colors, then try one harmless menu action.
 
 Native implementation references: [MSS capture examples](https://python-mss.readthedocs.io/latest/examples.html), [Windows DPI awareness](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setprocessdpiawarenesscontext), and [SendInput](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendinput).
