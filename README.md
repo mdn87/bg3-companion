@@ -6,9 +6,13 @@ A local, single-player helper for Windows on 4070pc. Play Baldur's Gate 3 on the
 
 This repository contains a working local prototype and a proposed friend beta. The [product concept](docs/CONCEPT.md), [source beta plan](docs/SOURCE_BETA_PLAN.md), and [mods/shared-run proposal](docs/MODS_AND_SHARED_RUNS.md) distinguish current behavior from required release work. Mod inventory and shared-run text reports are planned features, not implemented controls. A [Fable handoff prompt](docs/FABLE_HANDOFF.md) includes the local development paths. Publishing these documents does not mark the beta's acceptance checks complete.
 
+**Current scope (2026-09-05): local implementation on 4070pc.** Friend installation, polished installation instructions, fresh-install exercises, and testing on other devices are proposed later work, not requirements or gates for the current milestone. Existing source-beta acceptance lists describe future distribution readiness; they do not authorize starting that testing now. Keep current-machine checks focused on the behavior being changed and the existing mocked test suite.
+
+The next release-candidate PR will organize separate implementation items into a bounded action plan with explicit scope, dependencies, file ownership, acceptance evidence, and stopping conditions. It will distinguish planned work from implemented and verified behavior. A release-candidate planning checkpoint is not a declaration that the friend beta is ready.
+
 ## Start
 
-The project environment is already installed on 4070pc. Open `launch.cmd` to start the companion. For a fresh installation, run `./setup.ps1` in PowerShell; it installs dependencies inside `.venv`.
+The project environment is already installed on 4070pc. Open `launch.cmd` to start the companion. The proposed fresh-install route is `./setup.ps1` in PowerShell, which installs dependencies inside `.venv`; documenting and testing that route for friends is deferred.
 
 1. Open BG3 and keep its window visible on the main display. Borderless/windowed mode is the first test target; exclusive fullscreen and HDR need game-specific testing.
 2. Keep the companion and Codex on a different display.
