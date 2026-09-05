@@ -10,6 +10,8 @@ The requested README checkpoint was committed and pushed to `main` as `47ba1e4e0
 
 The PR establishes the work boundaries; it does not claim that the features below are implemented or that a friend beta is ready. Keep it draft while implementation remains outstanding. No release tag, automatic merge, live game action, or work dispatch is part of publishing this plan.
 
+For an independent read-only review, use the [complete Claude handoff](CLAUDE_CROSS_REVIEW_HANDOFF.md). It brings together the current code, six-item scope, deferred work, review questions, and a local-path prompt without starting implementation.
+
 ## What we borrowed from Lugos
 
 Autowork supplies the useful shape: bind a work item to a base commit, list allowed files, state contracts to preserve, define concrete steps and verification, and record how it finishes. Orca separates advisory planning from the authority to execute. We use that distinction here: the manifest is a task description, not an admitted worker assignment.

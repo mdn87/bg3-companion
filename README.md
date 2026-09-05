@@ -10,6 +10,8 @@ This repository contains a working local prototype and a proposed friend beta. T
 
 The [local RC action plan](docs/LOCAL_RC_PLAN.md) and [individual work items](docs/local-rc-work-items.json) organize the next implementation into explicit scope, dependencies, whole-file ownership, acceptance evidence, and stopping conditions. They borrow the plan/authority boundaries from Lugos Autowork and Orca without starting either system. All six implementation items are currently unstarted. The draft release-candidate PR is a planning checkpoint, not a declaration that the friend beta is ready.
 
+The [Claude cross-review handoff](docs/CLAUDE_CROSS_REVIEW_HANDOFF.md) collects the complete implementation scope, current behavior, deferred work, acceptance criteria, and a copyable read-only review prompt. It is ready for an independent review before implementation begins.
+
 ## Start
 
 The project environment is already installed on 4070pc. Open `launch.cmd` to start the companion. The proposed fresh-install route is `./setup.ps1` in PowerShell, which installs dependencies inside `.venv`; documenting and testing that route for friends is deferred.
