@@ -8,7 +8,7 @@ This repository contains a working local prototype and a proposed friend beta. T
 
 **Current scope (2026-09-05): local implementation on 4070pc.** Friend installation, polished installation instructions, fresh-install exercises, and testing on other devices are proposed later work, not requirements or gates for the current milestone. Existing source-beta acceptance lists describe future distribution readiness; they do not authorize starting that testing now. Keep current-machine checks focused on the behavior being changed and the existing mocked test suite.
 
-The next release-candidate PR will organize separate implementation items into a bounded action plan with explicit scope, dependencies, file ownership, acceptance evidence, and stopping conditions. It will distinguish planned work from implemented and verified behavior. A release-candidate planning checkpoint is not a declaration that the friend beta is ready.
+The [local RC action plan](docs/LOCAL_RC_PLAN.md) and [individual work items](docs/local-rc-work-items.json) organize the next implementation into explicit scope, dependencies, whole-file ownership, acceptance evidence, and stopping conditions. They borrow the plan/authority boundaries from Lugos Autowork and Orca without starting either system. All six implementation items are currently unstarted. The draft release-candidate PR is a planning checkpoint, not a declaration that the friend beta is ready.
 
 ## Start
 
