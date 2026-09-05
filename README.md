@@ -70,7 +70,7 @@ Every action needs the latest frame and a new request ID. Retry an uncertain **i
 - Full images, previews, metadata, and action records stay in ignored `.runtime/captures/`. Each capture stores both images and retention is manual for now. Do not commit captures or the connection descriptor.
 - Button request records and returned results stay in ignored `.runtime/requests/`. The queued preview is also attached to the linked Codex conversation for model analysis. The session takes a fresh capture before deciding or acting.
 
-If a screenshot is black, washed out, obscured, or stale, stop before acting. DirectX fullscreen capture, HDR color, and actual BG3 input acceptance must be validated on this machine. A later Windows Graphics Capture/DXGI backend can replace MSS if needed.
+If a screenshot is black, washed out, obscured, or stale, stop before acting. Exclusive fullscreen capture, HDR color, and gameplay interactions still need validation on this machine; the DX11 borderless menu check below passed. A later Windows Graphics Capture/DXGI backend can replace MSS if needed.
 
 ## Implementation and Tableforge relationship
 
@@ -93,6 +93,10 @@ The disposable arena's **Run bridge self-test** button exercises actual software
 ./.venv/Scripts/python.exe -m bg3_helper --runtime .runtime/test-panel panel --test-target
 ```
 
-Tests use a fake desktop for negative monitor coordinates, frame invalidation, input policy, duplicate/uncertain results, local HTTP behavior, request cancellation/expiration, advice-only permissions, and gesture limits. Real game testing remains a separate acceptance step: capture the actual scene, inspect tooltip detail and colors, then try one harmless menu action.
+Tests use a fake desktop for negative monitor coordinates, frame invalidation, input policy, duplicate/uncertain results, local HTTP behavior, request cancellation/expiration, advice-only permissions, and gesture limits.
+
+Live BG3 check, 2026-09-05: DX11 in borderless mode passed a menu capture and click test on 4070pc. The complete 3840 × 2160 client capture and a native crop were readable. Two bridge clicks opened Audio and unchecked **Mute Sound When Inactive**. A subsequent capture with the companion focused still showed it unchecked. Captures took approximately 0.8–1.0 seconds. Screenshots and the result record are under ignored `.runtime/captures/` and `.runtime/acceptance/audio-background.json`.
+
+The first click was correctly rejected while Codex had focus; activating BG3 through the Windows tool allowed the fresh-frame retry. This tested direct session commands, not a Smart next move button request. Audible background playback, settings persistence across game restart, and gameplay actions were not measured.
 
 Native implementation references: [MSS capture examples](https://python-mss.readthedocs.io/latest/examples.html), [Windows DPI awareness](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setprocessdpiawarenesscontext), and [SendInput](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendinput).
