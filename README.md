@@ -2,6 +2,10 @@
 
 A local, single-player helper for Windows on 4070pc. Play Baldur's Gate 3 on the main display and use Codex on another display. The companion captures the visible game window and exposes short, verified input gestures to the active agent session. It requires no KVM, HDMI duplication, game mod, or separate model API key.
 
+## Source beta planning
+
+This repository contains a working local prototype and a proposed friend beta. The [product concept](docs/CONCEPT.md), [source beta plan](docs/SOURCE_BETA_PLAN.md), and [mods/shared-run proposal](docs/MODS_AND_SHARED_RUNS.md) distinguish current behavior from required release work. Mod inventory and shared-run text reports are planned features, not implemented controls. A [Fable handoff prompt](docs/FABLE_HANDOFF.md) includes the local development paths. Publishing these documents does not mark the beta's acceptance checks complete.
+
 ## Start
 
 The project environment is already installed on 4070pc. Open `launch.cmd` to start the companion. For a fresh installation, run `./setup.ps1` in PowerShell; it installs dependencies inside `.venv`.
