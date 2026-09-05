@@ -64,9 +64,11 @@ def visual_difference(a, b):
 
 
 class Bridge:
-    def __init__(self, desktop, output: Path, *, clock=time.monotonic):
+    def __init__(self, desktop, output: Path, *, clock=time.monotonic, history=None):
         self.desktop = desktop
-        self.output = output.resolve()
+        self.history = history
+        self.settings = None
+        self.output = history.directory() / "captures" if history else output.resolve()
         self.output.mkdir(parents=True, exist_ok=True)
         self.clock = clock
         self.lock = threading.RLock()
@@ -116,9 +118,11 @@ class Bridge:
                     "input_enabled": self.armed,
                     "input_seconds_remaining": max(0, int(self.armed_until - self.clock())) if self.armed else 0,
                     "latest": self.frame, "note": self.note, "last_error": self.last_error,
-                    "session": self.session.status() if self.session else None}
+                    "session": self.session.status() if self.session else None,
+                    "play_session": self.history.status() if self.history else None,
+                    "setup_profiles": self.settings.profiles() if self.settings else None}
 
-    def _capture(self):
+    def _capture(self, reason="manual", request_id=None):
         target = self.desktop.target()
         before = self.clock()
         pixels = self.desktop.capture(target)
@@ -140,15 +144,54 @@ class Bridge:
             "capture_ms": round((self.clock() - before) * 1000),
             "coordinates": "Use pixels in preview_path for actions; full_path is for detail.",
             "capture_backend": "mss-visible-window-region",
+            "reason": reason, "request_id": request_id,
         }
+        if self.session and request_id is None:
+            active = self.session.status()["request"]
+            if active and active["status"] not in {"completed", "cancelled", "expired", "error"}:
+                frame["request_id"] = active["request_id"]
+        if self.history:
+            frame.update(self.history.context())
         (self.output / f"{frame_id}.json").write_text(json.dumps(frame, indent=2), encoding="utf-8")
+        if self.history:
+            self.history.record("capture", frame)
         self.frame, self.frame_pixels, self.frame_time = frame, pixels, before
         self.used = False
         return frame
 
-    def capture(self):
+    def capture(self, reason="manual", request_id=None):
         with self.lock:
-            return self._capture()
+            return self._capture(reason, request_id)
+
+    def play(self, operation, **values):
+        with self.lock:
+            if self.history is None:
+                raise BridgeError("Play history is not configured in this bridge.")
+            if self.session:
+                active = self.session.status()["request"]
+                if active and active["status"] not in {"completed", "cancelled", "expired", "error"}:
+                    raise BridgeError("Finish or STOP the current request before changing its play session or save link.")
+            if operation in {"new", "resume"}:
+                self.stop()
+                if operation == "new":
+                    result = self.history.new(values.get("label", "BG3"))
+                else:
+                    result = self.history.resume(values.get("session_id"))
+                self.output = self.history.directory() / "captures"
+                self.frame = self.frame_pixels = None
+                self.used = True
+                self.note = "Play session opened. Capture the game or request a smart move to continue."
+                self.last_error = ""
+                if self.session:
+                    self.session.current = None
+            elif operation == "rename":
+                result = self.history.rename(values.get("label"))
+            elif operation == "link":
+                result = self.history.link_save(save_id=values.get("save_id"), name=values.get("name", ""),
+                                                note=values.get("note", ""))
+            else:
+                raise BridgeError("Unknown play session operation.")
+            return result
 
     def crop(self, x, y, width, height):
         """Read a native-resolution crop of the latest saved frame; never changes action space."""
@@ -162,9 +205,12 @@ class Bridge:
                 raise BridgeError("Crop must fit inside the full-resolution image.")
             path = self.output / f"{self.frame['frame_id']}.crop-{uuid.uuid4().hex[:8]}.png"
             self.frame_pixels.crop((x, y, x + width, y + height)).save(path)
-            return {"path": str(path), "frame_id": self.frame["frame_id"],
+            result = {"path": str(path), "frame_id": self.frame["frame_id"],
                     "native_crop": [x, y, width, height],
                     "coordinates": "Crop pixels cannot be submitted as action coordinates. Use the preview."}
+            if self.history:
+                self.history.record("crop", result)
+            return result
 
     def act(self, request):
         with self.lock:
@@ -222,6 +268,8 @@ class Bridge:
                 self.session.before_action(request)
             elif request.get("smart_request_id"):
                 raise BridgeError("This companion has no active session request.")
+            if self.history:
+                self.history.record("action_intent", {"request": request, "before": self.frame})
             self.used = True
             result = {"request_id": request_id, "status": "outcome_unknown"}
             # Reserve before the first OS event. An uncertain result must never be replayed.
@@ -229,7 +277,7 @@ class Bridge:
             try:
                 self.desktop.send(target, action, self.stopped)
                 time.sleep(0.2)
-                after = self._capture()
+                after = self._capture("after_action", request.get("smart_request_id"))
                 result = {"request_id": request_id, "status": "input_sent", "after": after,
                           "message": "Inspect the after frame to verify the intended game effect."}
             except Exception as exc:
@@ -239,4 +287,6 @@ class Bridge:
             self.results[request_id] = (dict(request), result)
             with (self.output / "actions.jsonl").open("a", encoding="utf-8") as log:
                 log.write(json.dumps({"request": request, "result": result}) + "\n")
+            if self.history:
+                self.history.record("action_result", {"request": request, "result": result})
             return result

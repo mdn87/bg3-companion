@@ -8,6 +8,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from .core import BridgeError
+from .history import discover_saves
 
 
 def create_server(bridge):
@@ -50,6 +51,38 @@ def create_server(bridge):
                 elif self.path == "/stop":
                     bridge.stop()
                     result = {"input_enabled": False}
+                elif self.path in {"/play", "/history", "/saves"}:
+                    if bridge.history is None:
+                        raise BridgeError("Play history is not configured in this bridge.")
+                    with bridge.lock:
+                        if self.path == "/play":
+                            values = dict(body)
+                            operation = values.pop("operation", None)
+                            result = bridge.play(operation, **values)
+                        elif self.path == "/saves":
+                            result = {"saves": discover_saves(bridge.history.game_data), "loaded_save": "unknown"}
+                        else:
+                            result = {"current": bridge.history.status(), "sessions": bridge.history.sessions(),
+                                      "directory": str(bridge.history.directory(body.get("session_id"))),
+                                      "selected_session_id": body.get("session_id") or bridge.history.current["play_session_id"],
+                                      "events": bridge.history.events(body.get("session_id"), body.get("limit", 500))}
+                elif self.path in {"/profiles", "/settings-snapshot", "/settings-observe", "/settings"}:
+                    if bridge.settings is None:
+                        raise BridgeError("Settings tracking is not configured in this bridge.")
+                    with bridge.lock:
+                        if self.path == "/profiles":
+                            result = (bridge.settings.select_profile(body["profile_id"], body.get("overrides"), body.get("note", ""))
+                                      if "profile_id" in body else bridge.settings.profiles())
+                        elif self.path == "/settings-snapshot":
+                            status = bridge.status()
+                            active = (status.get("session") or {}).get("request")
+                            request_id = (active["request_id"] if active and active["status"] in
+                                          {"sending", "queued", "working"} else None)
+                            result = bridge.settings.snapshot(target=status["target"], request_id=request_id)
+                        elif self.path == "/settings-observe":
+                            result = bridge.settings.observe(body.get("frame_id"), body.get("values"), body.get("note", ""))
+                        else:
+                            result = bridge.settings.current()
                 elif self.path in {"/connect", "/request", "/claim", "/finish"}:
                     if bridge.session is None:
                         raise BridgeError("Session buttons are not connected in this bridge.")
@@ -71,6 +104,8 @@ def create_server(bridge):
                 else:
                     self.reply(404, {"error": "Unknown operation."})
                     return
+                if self.path != "/status":
+                    bridge.last_error = result.get("error", "") if result.get("status") == "outcome_unknown" else ""
                 self.reply(200, result)
             except (BridgeError, ValueError, TypeError) as exc:
                 bridge.last_error = str(exc)

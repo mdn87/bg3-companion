@@ -1,0 +1,4 @@
+interface:
+  display_name: "BG3 Observe"
+  short_description: "Inspect BG3 captures and play-session history"
+  default_prompt: "Use $bg3-observe to inspect the current BG3 screen and record what is visible."

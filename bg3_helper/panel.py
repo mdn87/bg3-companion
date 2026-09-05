@@ -1,5 +1,6 @@
 """A native second-screen panel; inference stays in the active agent session."""
 import json
+import os
 from pathlib import Path
 import queue
 import threading
@@ -12,9 +13,12 @@ from .core import Bridge, BridgeError
 from .transport import create_server, request
 from .windows import Hotkeys, WindowsDesktop
 from .session import SessionRequests, TERMINAL
+from .history import PlayHistory, write_json
+from .settings import SettingsTracker
+from .dialogs import history_dialog, session_dialog, setup_dialog
 
 
-def run_panel(runtime: Path, test_target=False):
+def run_panel(runtime: Path, test_target=False, *, data=None):
     desktop = WindowsDesktop(test_target=test_target)
     runtime.mkdir(parents=True, exist_ok=True)
     try:
@@ -23,7 +27,16 @@ def run_panel(runtime: Path, test_target=False):
         pass
     else:
         raise BridgeError("A companion is already running for this runtime directory.")
-    bridge = Bridge(desktop, runtime / "captures")
+    project = Path(__file__).resolve().parent.parent
+    normal_runtime = project / ".runtime"
+    data = Path(data).resolve() if data else (project / "play-sessions" if runtime == normal_runtime and not test_target else runtime / "play-sessions")
+    game_data = (runtime / "fake-game-data" if test_target else
+                 Path(os.environ["LOCALAPPDATA"]) / "Larian Studios" / "Baldur's Gate 3")
+    history = PlayHistory(data, game_data)
+    if not test_target:
+        history.import_legacy(runtime / "captures")
+    bridge = Bridge(desktop, runtime / "captures", history=history)
+    bridge.settings = SettingsTracker(history, inspect_system=desktop.system_info)
     session = SessionRequests(bridge, runtime)
     server, descriptor = create_server(bridge)
     (runtime / "connection.json").write_text(json.dumps(descriptor), encoding="utf-8")
@@ -32,18 +45,33 @@ def run_panel(runtime: Path, test_target=False):
     root = tk.Tk()
     root.title("BG3 Companion" + (" — Test" if test_target else ""))
     root.configure(bg="#111722")
-    root.minsize(540, 920)
+    root.minsize(620, 1180)
     # Start on the non-primary display when one is available, without changing display settings.
     import mss
     with mss.mss() as grabber:
         screens = grabber.monitors[1:]
     screen = next((m for m in screens if m["left"] != 0 or m["top"] != 0), screens[0])
-    root.geometry("560x1000")
+    root.geometry("640x1200")
     root.update_idletasks()
     hwnd = desktop.user.GetAncestor(root.winfo_id(), 2)
     # Tk's negative geometry offsets mean distance from the right/bottom, not
     # negative virtual-desktop coordinates. Position explicitly in physical pixels.
     desktop.gui.SetWindowPos(hwnd, 0, screen["left"] + 35, screen["top"] + 60, 0, 0, 0x0015)
+    try:
+        placement = json.loads((runtime / "panel.json").read_text(encoding="utf-8"))
+        x, y, width, height = (placement[key] for key in ("x", "y", "width", "height"))
+        visible = any(x < m["left"] + m["width"] - 100 and x + width > m["left"] + 100 and
+                      y < m["top"] + m["height"] - 100 and y + height > m["top"] + 100 for m in screens)
+        if all(type(value) is int for value in (x, y, width, height)) and visible:
+            desktop.gui.SetWindowPos(hwnd, 0, x, y, max(620, width), max(1220, height), 0x0014)
+    except (OSError, KeyError, ValueError, TypeError):
+        pass
+
+    def position_dialog(window):
+        window.update_idletasks()
+        child = desktop.user.GetAncestor(window.winfo_id(), 2)
+        left, top, _, _ = desktop.gui.GetWindowRect(hwnd)
+        desktop.gui.SetWindowPos(child, 0, left + 20, top + 45, 0, 0, 0x0015)
     style = ttk.Style(root)
     style.theme_use("clam")
     style.configure("TButton", font=("Segoe UI", 11), padding=9)
@@ -86,6 +114,13 @@ def run_panel(runtime: Path, test_target=False):
     label("A second pair of eyes", 23, "#edf1f7")
     label("Play on your main display. Get help here.", wraplength=510)
     target_label = label("Looking for the game…", 12, "#ebcf92", wraplength=500)
+    play_row = tk.Frame(body, bg="#111722")
+    play_row.pack(fill="x", pady=(0, 12))
+    play_label = tk.Label(play_row, text="Opening play session…", bg="#111722", fg="#aebbd0",
+                          font=("Segoe UI", 10), justify="left", anchor="w", wraplength=300)
+    play_label.pack(side="left", fill="x", expand=True)
+    ttk.Button(play_row, text="Session & save", command=lambda: session_dialog(root, runtime, position_dialog)).pack(side="left", padx=5)
+    ttk.Button(play_row, text="History", command=lambda: history_dialog(root, runtime, position_dialog)).pack(side="right")
 
     input_card = tk.Frame(body, bg="#1a2332", padx=12, pady=10,
                           highlightthickness=2, highlightbackground="#46566d")
@@ -115,7 +150,7 @@ def run_panel(runtime: Path, test_target=False):
                                fg=foreground, activebackground=background, activeforeground=foreground,
                                selectcolor=background, highlightbackground=background)
         seconds = max(0, int(bridge.armed_until - bridge.clock()))
-        input_label.configure(text=(f"Smart next move may act · {seconds // 60}:{seconds % 60:02d} remaining" if armed
+        input_label.configure(text=(f"Smart requests may act · {seconds // 60}:{seconds % 60:02d} remaining" if armed
                                     else "Advice only · game input disabled"), bg=background, fg=foreground)
 
     def toggle_from_panel():
@@ -155,6 +190,13 @@ def run_panel(runtime: Path, test_target=False):
     smart_button = ttk.Button(smart_row, text="Smart next move", command=lambda: submit("smart"))
     smart_button.pack(side="left", fill="x", expand=True, padx=(5, 0))
 
+    setup_row = tk.Frame(body, bg="#111722")
+    setup_row.pack(fill="x", pady=(0, 8))
+    setup_button = ttk.Button(setup_row, text="Smart system setup", command=lambda: submit("setup"))
+    setup_button.pack(side="left", fill="x", expand=True, padx=(0, 5))
+    profile_button = ttk.Button(setup_row, text="Profiles: Balanced", command=lambda: setup_dialog(root, runtime, position_dialog))
+    profile_button.pack(side="left", fill="x", expand=True, padx=(5, 0))
+
     row = tk.Frame(body, bg="#111722")
     row.pack(fill="x", pady=(2, 10))
     ttk.Button(row, text="Capture only", command=lambda: work.put(bridge.capture)).pack(side="left")
@@ -163,7 +205,7 @@ def run_panel(runtime: Path, test_target=False):
     session_label = label("Connecting to Codex…", 10, "#ebcf92", wraplength=500)
     label("Optional shortcuts: hold Ctrl+Alt, then Numpad 0 to capture,\n1 to toggle input, or 2 to stop. Num Lock on.", 10, wraplength=510)
     preview = tk.Label(body, text="Your next game capture appears here", bg="#1a2332", fg="#8391a7",
-                       height=6, font=("Segoe UI", 11))
+                       height=4, font=("Segoe UI", 11))
     preview.pack(fill="x", pady=(0, 10))
     frame_label = label("No frame captured", 10, wraplength=510)
     advice = tk.Text(body, height=4, wrap="word", bg="#1a2332", fg="#e0e7f0",
@@ -196,9 +238,14 @@ def run_panel(runtime: Path, test_target=False):
             target_label.configure(text=(f"{target['title']}\n{target['rect']['width']} × {target['rect']['height']}" if target
                                          else "Waiting for Baldur’s Gate 3\nOpen the game and keep it visible."))
             session_status = status["session"]
+            play = status["play_session"]
+            save = (play["linked_save"] or {}).get("name", "Not linked")
+            play_label.configure(text=f"{play['label'][:45]}\nSave: {save[:45]}")
+            profiles = status["setup_profiles"]
+            profile_button.configure(text="Profiles: " + profiles["profiles"][profiles["active"]]["label"])
             active = session_status["request"]
             busy = active is not None and active["status"] not in TERMINAL
-            for button in (smart_button, explain_button):
+            for button in (smart_button, explain_button, setup_button):
                 button.configure(state="disabled" if busy else "normal")
             messages = {"sending": "Sending your request to Codex…", "queued": "Waiting for Codex to finish its current turn…",
                         "working": "Codex is looking at the game…", "completed": "Result received from Codex.",
@@ -208,11 +255,16 @@ def run_panel(runtime: Path, test_target=False):
                                           else "Linked to Codex. Each button press requests help once." if session_status["thread_id"]
                                           else "Ask Codex to connect this companion to the conversation."))
             frame = status["latest"]
+            if frame is None and last_frame is not None:
+                preview.configure(image="", text="Your next game capture appears here", height=4)
+                preview.image = None
+                frame_label.configure(text="No frame captured")
+                last_frame = None
             if frame and frame["frame_id"] != last_frame:
                 try:
                     with Image.open(frame["preview_path"]) as saved:
                         thumb = saved.copy()
-                    thumb.thumbnail((510, 220), Image.Resampling.LANCZOS)
+                    thumb.thumbnail((550, 175), Image.Resampling.LANCZOS)
                     photo = ImageTk.PhotoImage(thumb)
                     preview.configure(image=photo, text="", height=0)
                     preview.image = photo
@@ -234,11 +286,18 @@ def run_panel(runtime: Path, test_target=False):
 
     def close():
         bridge.stop()
+        left, top, right, bottom = desktop.gui.GetWindowRect(hwnd)
+        write_json(runtime / "panel.json", {"x": left, "y": top, "width": right - left, "height": bottom - top})
         closing.set()
         hotkeys.close()
         root.destroy()
 
     root.protocol("WM_DELETE_WINDOW", close)
+    def baseline():
+        with bridge.lock:
+            if not history.current["settings_snapshot_id"]:
+                bridge.settings.snapshot(target=bridge.status()["target"])
+    work.put(baseline)
     refresh()
     try:
         root.mainloop()

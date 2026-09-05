@@ -119,11 +119,35 @@ class WindowsDesktop:
         return self.gui.GetForegroundWindow() == target.hwnd
 
     def return_focus(self, target, source_hwnd):
-        # Called only by the user's Smart next move button. Never interrupt a
+        # Called only by a user's Smart button press. Never interrupt a
         # different app the user has switched to while capture was running.
         if self.gui.GetForegroundWindow() != source_hwnd or self.target() != target:
             raise BridgeError("Focus changed since the companion button was pressed.")
         self.gui.SetForegroundWindow(target.hwnd)
+
+    def system_info(self):
+        import csv
+        import platform
+        import shutil
+        import subprocess
+        import mss
+        with mss.mss() as grabber:
+            monitors = [dict(item) for item in grabber.monitors[1:]]
+        result = {"platform": platform.platform(), "processor": platform.processor(), "monitors": monitors,
+                  "gpus": [], "gpu_inspection": "unavailable"}
+        executable = shutil.which("nvidia-smi.exe")
+        if executable:
+            try:
+                completed = subprocess.run([executable, "--query-gpu=name,driver_version,memory.total",
+                                            "--format=csv,noheader,nounits"], capture_output=True, text=True,
+                                           timeout=5, creationflags=subprocess.CREATE_NO_WINDOW, shell=False)
+                if completed.returncode == 0:
+                    result["gpus"] = [{"name": row[0].strip(), "driver": row[1].strip(), "memory_mib": row[2].strip()}
+                                      for row in csv.reader(completed.stdout.splitlines()) if len(row) == 3]
+                    result["gpu_inspection"] = "nvidia-smi"
+            except (OSError, subprocess.TimeoutExpired):
+                pass
+        return result
 
     def _visible(self, target):
         # Screen-region capture includes occluders. Reject overlapping unrelated windows

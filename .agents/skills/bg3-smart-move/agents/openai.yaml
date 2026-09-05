@@ -1,0 +1,4 @@
+interface:
+  display_name: "BG3 Smart Move"
+  short_description: "Perform one BG3 move with verified input"
+  default_prompt: "Use $bg3-smart-move to handle the current companion request and return its result."

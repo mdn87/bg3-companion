@@ -1,0 +1,4 @@
+interface:
+  display_name: "BG3 System Setup"
+  short_description: "Audit BG3 setup profiles and track changes"
+  default_prompt: "Use $bg3-system-setup to inspect BG3 settings and apply the selected companion profile when input is allowed."

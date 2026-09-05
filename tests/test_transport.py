@@ -8,6 +8,8 @@ import pytest
 from bg3_helper.transport import create_server, request
 from bg3_helper.core import Bridge, BridgeError
 from bg3_helper.session import SessionRequests
+from bg3_helper.history import PlayHistory
+from bg3_helper.settings import SettingsTracker
 from test_core import Desktop
 
 
@@ -68,3 +70,29 @@ def test_button_request_and_result_over_http(service, monkeypatch):
     assert not bridge.armed
     with pytest.raises(BridgeError, match="completed"):
         request(runtime, "claim", body)
+
+
+def test_play_settings_and_history_over_http(service):
+    bridge, _, _, runtime = service
+    bridge.history = PlayHistory(runtime / "plays", runtime / "fake-game")
+    bridge.output = bridge.history.directory() / "captures"
+    bridge.settings = SettingsTracker(bridge.history)
+    assert request(runtime, "saves") == {"saves": [], "loaded_save": "unknown"}
+    request(runtime, "play", {"operation": "rename", "label": "Development"})
+    request(runtime, "play", {"operation": "link", "name": "Manual save label"})
+    profiles = request(runtime, "profiles", {"profile_id": "balanced", "overrides": {"target_fps": 75}, "note": "Dev override"})
+    assert profiles["profiles"]["balanced"]["note"] == "Dev override"
+    snapshot = request(runtime, "settings-snapshot")
+    assert snapshot["profile"]["target_fps"] == 75
+    frame = request(runtime, "capture")
+    request(runtime, "settings-observe", {"frame_id": frame["frame_id"], "values": {"display_mode": "Borderless Window"}})
+    settings = request(runtime, "settings")
+    assert settings["observations"]["display_mode"]["value"] == "Borderless Window"
+    assert settings["latest_snapshot"]["snapshot_id"] == frame["settings_snapshot_id"]
+    history = request(runtime, "history", {"limit": 2})
+    assert history["current"]["linked_save"]["name"] == "Manual save label"
+    assert history["selected_session_id"] == frame["play_session_id"]
+    assert [event["kind"] for event in history["events"]] == ["settings_observed", "capture"]
+    assert not bridge.desktop.sent
+    with pytest.raises(BridgeError, match="Invalid play session ID"):
+        request(runtime, "history", {"session_id": "../outside"})
