@@ -6,7 +6,7 @@ import threading
 import tkinter as tk
 from tkinter import ttk
 
-from PIL import Image, ImageTk
+from PIL import Image, ImageDraw, ImageTk
 
 from .core import Bridge, BridgeError
 from .transport import create_server, request
@@ -86,7 +86,55 @@ def run_panel(runtime: Path, test_target=False):
     label("A second pair of eyes", 23, "#edf1f7")
     label("Play on your main display. Get help here.", wraplength=510)
     target_label = label("Looking for the game…", 12, "#ebcf92", wraplength=500)
-    input_label = label("Input off · advice and screenshots only", 11, "#87bea6")
+
+    input_card = tk.Frame(body, bg="#1a2332", padx=12, pady=10,
+                          highlightthickness=2, highlightbackground="#46566d")
+    input_card.pack(fill="x", pady=(0, 16))
+    input_state = tk.BooleanVar(value=False)
+
+    def switch_image(enabled):
+        # Keep a real Checkbutton for keyboard focus/Space; draw its switch face.
+        picture = Image.new("RGBA", (324, 132))
+        draw = ImageDraw.Draw(picture)
+        draw.rounded_rectangle((0, 0, 323, 131), radius=66,
+                               fill="#32c797" if enabled else "#536279")
+        left = 198 if enabled else 12
+        draw.ellipse((left, 12, left + 108, 120), fill="#ffffff")
+        return ImageTk.PhotoImage(picture.resize((108, 44), Image.Resampling.LANCZOS))
+
+    off_image, on_image = switch_image(False), switch_image(True)
+
+    def update_input_switch():
+        # Read the permission directly, so an old status snapshot cannot undo STOP visually.
+        armed = bridge.armed
+        background = "#153b32" if armed else "#1a2332"
+        foreground = "#b2f5d8" if armed else "#dce4ee"
+        input_state.set(armed)
+        input_card.configure(bg=background, highlightbackground="#32c797" if armed else "#46566d")
+        input_switch.configure(text="  INPUT ON" if armed else "  INPUT OFF", bg=background,
+                               fg=foreground, activebackground=background, activeforeground=foreground,
+                               selectcolor=background, highlightbackground=background)
+        seconds = max(0, int(bridge.armed_until - bridge.clock()))
+        input_label.configure(text=(f"Smart next move may act · {seconds // 60}:{seconds % 60:02d} remaining" if armed
+                                    else "Advice only · game input disabled"), bg=background, fg=foreground)
+
+    def toggle_from_panel():
+        toggle()
+        # Enabling is asynchronous. Show ON only after the bridge accepts it.
+        update_input_switch()
+
+    input_switch = tk.Checkbutton(input_card, text="  INPUT OFF", variable=input_state,
+                                  command=toggle_from_panel, indicatoron=False, image=off_image,
+                                  selectimage=on_image, compound="left", anchor="w", cursor="hand2",
+                                  font=("Segoe UI", 20, "bold"), bg="#1a2332", fg="#dce4ee",
+                                  relief="flat", offrelief="flat", borderwidth=0, padx=2, pady=3,
+                                  highlightthickness=2, highlightbackground="#1a2332",
+                                  highlightcolor="#c4e3ff", takefocus=True)
+    input_switch.pack(fill="x")
+    input_switch.bind("<Return>", lambda _event: (input_switch.invoke(), "break")[-1])
+    input_label = tk.Label(input_card, text="Advice only · game input disabled", bg="#1a2332", fg="#dce4ee",
+                           font=("Segoe UI", 10), anchor="w", padx=4, pady=5, wraplength=465)
+    input_label.pack(fill="x")
 
     label("What are you trying to do? (optional)", 10)
     objective = tk.StringVar()
@@ -110,12 +158,10 @@ def run_panel(runtime: Path, test_target=False):
     row = tk.Frame(body, bg="#111722")
     row.pack(fill="x", pady=(2, 10))
     ttk.Button(row, text="Capture only", command=lambda: work.put(bridge.capture)).pack(side="left")
-    arm_button = ttk.Button(row, text="Allow actions", command=toggle)
-    arm_button.pack(side="left", padx=8)
     tk.Button(row, text="STOP", command=bridge.stop, bg="#963d46", fg="white",
               activebackground="#b64c58", relief="flat", font=("Segoe UI", 11, "bold"), padx=16, pady=9).pack(side="right")
     session_label = label("Connecting to Codex…", 10, "#ebcf92", wraplength=500)
-    label("Optional shortcuts: hold Ctrl+Alt, then Numpad 0 to capture,\n1 to allow actions, or 2 to stop. Num Lock on.", 10, wraplength=510)
+    label("Optional shortcuts: hold Ctrl+Alt, then Numpad 0 to capture,\n1 to toggle input, or 2 to stop. Num Lock on.", 10, wraplength=510)
     preview = tk.Label(body, text="Your next game capture appears here", bg="#1a2332", fg="#8391a7",
                        height=6, font=("Segoe UI", 11))
     preview.pack(fill="x", pady=(0, 10))
@@ -138,6 +184,7 @@ def run_panel(runtime: Path, test_target=False):
         nonlocal last_frame, last_note, poll_running
         if closing.is_set():
             return
+        update_input_switch()
         # Never block Tk on a capture or OS call; STOP remains responsive.
         try:
             status = ui.get_nowait()
@@ -148,11 +195,6 @@ def run_panel(runtime: Path, test_target=False):
             target = status["target"]
             target_label.configure(text=(f"{target['title']}\n{target['rect']['width']} × {target['rect']['height']}" if target
                                          else "Waiting for Baldur’s Gate 3\nOpen the game and keep it visible."))
-            armed = status["input_enabled"]
-            input_label.configure(text=(f"Smart next move may act · {status['input_seconds_remaining']} seconds left" if armed
-                                         else "Actions off · Smart next move gives advice"),
-                                  fg="#ebcf92" if armed else "#87bea6")
-            arm_button.configure(text="Disable actions" if armed else "Allow actions")
             session_status = status["session"]
             active = session_status["request"]
             busy = active is not None and active["status"] not in TERMINAL
@@ -160,7 +202,7 @@ def run_panel(runtime: Path, test_target=False):
                 button.configure(state="disabled" if busy else "normal")
             messages = {"sending": "Sending your request to Codex…", "queued": "Waiting for Codex to finish its current turn…",
                         "working": "Codex is looking at the game…", "completed": "Result received from Codex.",
-                        "cancelled": "Request cancelled. Actions are off.", "expired": "Request expired. Press a button to try again.",
+                        "cancelled": "Request cancelled. Press a button to start again.", "expired": "Request expired. Press a button to try again.",
                         "error": "Request could not finish. Check the message below."}
             session_label.configure(text=(messages.get(active["status"], active["status"]) if active
                                           else "Linked to Codex. Each button press requests help once." if session_status["thread_id"]

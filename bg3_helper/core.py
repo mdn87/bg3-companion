@@ -179,7 +179,7 @@ class Bridge:
                     raise BridgeError("request_id was already used for a different action.")
                 return result
             if not self.armed:
-                raise BridgeError(f"Input is off. Allow actions in the companion panel or with {INPUT_SHORTCUT}.")
+                raise BridgeError(f"Input is off. Turn the INPUT switch on in the companion or use {INPUT_SHORTCUT}.")
             if self.frame is None or request.get("frame_id") != self.frame["frame_id"]:
                 raise BridgeError("Action must reference the latest frame_id.")
             if self.used or self.clock() - self.frame_time > 60:
