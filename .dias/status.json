@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "projectId": "bg3-companion",
+  "projectLabel": "BG3 Companion",
+  "assessmentState": "scored",
+  "assessmentScope": "current-milestone",
+  "percentComplete": 15,
+  "milestonePhase": "build-and-validate",
+  "portfolioGroup": "product",
+  "displayPriority": 20,
+  "assessedAt": "2026-09-05T06:40:00.000Z",
+  "confidence": "reported",
+  "currentMilestone": "First shareable Windows source beta for friends who already use Codex: install, connect their own conversation, and drive bounded game input with visible INPUT and STOP.",
+  "remainingSummary": "Friend-owned connection comes next, followed by source ZIP portability, profiles, the read-only mod report, privacy, and first-user release verification.",
+  "nextChipId": "bg3-companion:beta:codex-connection",
+  "source": {
+    "label": "Source beta plan, updated 5 September 2026",
+    "updatedAt": "2026-09-05"
+  }
+}

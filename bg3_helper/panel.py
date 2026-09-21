@@ -26,7 +26,8 @@ def run_panel(runtime: Path, test_target=False, *, data=None):
     except BridgeError:
         pass
     else:
-        raise BridgeError("A companion is already running for this runtime directory.")
+        from .diagnostics import DiagnosticError
+        raise DiagnosticError("A companion is already running for this runtime folder. Use its window or close it before launching again.")
     project = Path(__file__).resolve().parent.parent
     normal_runtime = project / ".runtime"
     data = Path(data).resolve() if data else (project / "play-sessions" if runtime == normal_runtime and not test_target else runtime / "play-sessions")

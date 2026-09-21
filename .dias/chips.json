@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "projectId": "bg3-companion",
+  "projectLabel": "BG3 Companion",
+  "chips": [
+    {
+      "schemaVersion": 1,
+      "chipId": "bg3-companion:beta:baseline",
+      "projectId": "bg3-companion",
+      "title": "Capture, history, profiles, and skills exist",
+      "summary": "Screenshot and play history, explicit save references, setup snapshots, three profiles with overrides, and three repository skills exist. Live workflows remain unverified.",
+      "stage": "done",
+      "sequence": 10,
+      "prereqs": [],
+      "linkedRunIds": [],
+      "confidence": "reported",
+      "aheadOfPrereqs": null,
+      "timestamps": {
+        "createdAt": "2026-09-05T06:40:00.000Z",
+        "updatedAt": "2026-09-05T06:40:00.000Z"
+      },
+      "evidence": [
+        {
+          "entryId": "bg3-companion:beta:baseline:e1",
+          "at": "2026-09-05T06:40:00.000Z",
+          "kind": "created",
+          "message": "Starter board cut from the source beta plan (updated 5 September) when the project was first put on the Dias wall. Stages are as the plan reports them, not verified live."
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "chipId": "bg3-companion:beta:install-diagnostics",
+      "projectId": "bg3-companion",
+      "title": "Installation and visible diagnostics",
+      "summary": "Pick and validate a supported interpreter, check Tk, pip, venv, and write access, keep a good launch quiet, and show a useful failure with a log location. No silent fallback.",
+      "stage": "done",
+      "sequence": 20,
+      "prereqs": [
+        "bg3-companion:beta:baseline"
+      ],
+      "linkedRunIds": [],
+      "confidence": "authoritative",
+      "aheadOfPrereqs": null,
+      "timestamps": {
+        "createdAt": "2026-09-05T06:40:00.000Z",
+        "updatedAt": "2026-09-21T02:55:44.412Z"
+      },
+      "evidence": [
+        {
+          "entryId": "bg3-companion:beta:install-diagnostics:e1",
+          "at": "2026-09-05T06:40:00.000Z",
+          "kind": "created",
+          "message": "Starter board cut from the source beta plan (updated 5 September) when the project was first put on the Dias wall. Stages are as the plan reports them, not verified live."
+        },
+        {
+          "entryId": "bg3-companion:beta:install-diagnostics:e2",
+          "at": "2026-09-21T02:55:44.412Z",
+          "kind": "stage-change",
+          "message": "Installation diagnostics completed with 104 passing tests, a Unicode-folder install and rerun, and quiet launch checks. Clean-account testing remains for release verification."
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "chipId": "bg3-companion:beta:codex-connection",
+      "projectId": "bg3-companion",
+      "title": "Friend-owned Codex connection with a test button",
+      "summary": "Connect and Test buttons, a capability probe, and distinct configured, queued, working, and callback-confirmed states, using the friend's own conversation and no separate API key.",
+      "stage": "ready",
+      "sequence": 30,
+      "prereqs": [
+        "bg3-companion:beta:baseline"
+      ],
+      "linkedRunIds": [],
+      "confidence": "reported",
+      "aheadOfPrereqs": null,
+      "timestamps": {
+        "createdAt": "2026-09-05T06:40:00.000Z",
+        "updatedAt": "2026-09-05T06:40:00.000Z"
+      },
+      "evidence": [
+        {
+          "entryId": "bg3-companion:beta:codex-connection:e1",
+          "at": "2026-09-05T06:40:00.000Z",
+          "kind": "created",
+          "message": "Starter board cut from the source beta plan (updated 5 September) when the project was first put on the Dias wall. Stages are as the plan reports them, not verified live."
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "chipId": "bg3-companion:beta:portability",
+      "projectId": "bg3-companion",
+      "title": "Source ZIP layout and display portability",
+      "summary": "Callbacks and skills must work from an extracted source ZIP under another account. The panel must fit 1080p at 100, 125, and 150 percent scaling with INPUT and STOP visible.",
+      "stage": "planned",
+      "sequence": 40,
+      "prereqs": [
+        "bg3-companion:beta:install-diagnostics"
+      ],
+      "linkedRunIds": [],
+      "confidence": "reported",
+      "aheadOfPrereqs": null,
+      "timestamps": {
+        "createdAt": "2026-09-05T06:40:00.000Z",
+        "updatedAt": "2026-09-05T06:40:00.000Z"
+      },
+      "evidence": [
+        {
+          "entryId": "bg3-companion:beta:portability:e1",
+          "at": "2026-09-05T06:40:00.000Z",
+          "kind": "created",
+          "message": "Starter board cut from the source beta plan (updated 5 September) when the project was first put on the Dias wall. Stages are as the plan reports them, not verified live."
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "chipId": "bg3-companion:beta:history-profiles",
+      "projectId": "bg3-companion",
+      "title": "Session history and credible setup profiles",
+      "summary": "Keep three editable setup profiles with Balanced selected and recorded overrides. Applying a profile to the live game still needs its own validation pass.",
+      "stage": "planned",
+      "sequence": 50,
+      "prereqs": [
+        "bg3-companion:beta:portability"
+      ],
+      "linkedRunIds": [],
+      "confidence": "reported",
+      "aheadOfPrereqs": null,
+      "timestamps": {
+        "createdAt": "2026-09-05T06:40:00.000Z",
+        "updatedAt": "2026-09-05T06:40:00.000Z"
+      },
+      "evidence": [
+        {
+          "entryId": "bg3-companion:beta:history-profiles:e1",
+          "at": "2026-09-05T06:40:00.000Z",
+          "kind": "created",
+          "message": "Starter board cut from the source beta plan (updated 5 September) when the project was first put on the Dias wall. Stages are as the plan reports them, not verified live."
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "chipId": "bg3-companion:beta:mod-inventory",
+      "projectId": "bg3-companion",
+      "title": "Read-only mod inventory and shared-run text report",
+      "summary": "Detect configured entries and package files, record versions and order, snapshot changes since the last scan, and preview a copyable report that excludes paths, tokens, and notes.",
+      "stage": "planned",
+      "sequence": 60,
+      "prereqs": [
+        "bg3-companion:beta:history-profiles"
+      ],
+      "linkedRunIds": [],
+      "confidence": "reported",
+      "aheadOfPrereqs": null,
+      "timestamps": {
+        "createdAt": "2026-09-05T06:40:00.000Z",
+        "updatedAt": "2026-09-05T06:40:00.000Z"
+      },
+      "evidence": [
+        {
+          "entryId": "bg3-companion:beta:mod-inventory:e1",
+          "at": "2026-09-05T06:40:00.000Z",
+          "kind": "created",
+          "message": "Starter board cut from the source beta plan (updated 5 September) when the project was first put on the Dias wall. Stages are as the plan reports them, not verified live."
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "chipId": "bg3-companion:beta:privacy-retention",
+      "projectId": "bg3-companion",
+      "title": "Privacy, retention, and updates",
+      "summary": "Decide what captures and history are kept, for how long, and how a friend updates a source install without losing personal data.",
+      "stage": "planned",
+      "sequence": 70,
+      "prereqs": [
+        "bg3-companion:beta:mod-inventory"
+      ],
+      "linkedRunIds": [],
+      "confidence": "reported",
+      "aheadOfPrereqs": null,
+      "timestamps": {
+        "createdAt": "2026-09-05T06:40:00.000Z",
+        "updatedAt": "2026-09-05T06:40:00.000Z"
+      },
+      "evidence": [
+        {
+          "entryId": "bg3-companion:beta:privacy-retention:e1",
+          "at": "2026-09-05T06:40:00.000Z",
+          "kind": "created",
+          "message": "Starter board cut from the source beta plan (updated 5 September) when the project was first put on the Dias wall. Stages are as the plan reports them, not verified live."
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "chipId": "bg3-companion:beta:release-verification",
+      "projectId": "bg3-companion",
+      "title": "Release presentation and first-user verification",
+      "summary": "Tag 0.1.0b1 only after a first-time user completes install, connect, callback, explain, input, action, STOP, and restart on a clean Windows account.",
+      "stage": "planned",
+      "sequence": 80,
+      "prereqs": [
+        "bg3-companion:beta:privacy-retention"
+      ],
+      "linkedRunIds": [],
+      "confidence": "reported",
+      "aheadOfPrereqs": null,
+      "timestamps": {
+        "createdAt": "2026-09-05T06:40:00.000Z",
+        "updatedAt": "2026-09-05T06:40:00.000Z"
+      },
+      "evidence": [
+        {
+          "entryId": "bg3-companion:beta:release-verification:e1",
+          "at": "2026-09-05T06:40:00.000Z",
+          "kind": "created",
+          "message": "Starter board cut from the source beta plan (updated 5 September) when the project was first put on the Dias wall. Stages are as the plan reports them, not verified live."
+        },
+        {
+          "entryId": "bg3-companion:beta:release-verification:e2",
+          "at": "2026-09-05T06:40:00.000Z",
+          "kind": "note",
+          "message": "The plan proposes version 0.1.0b1 and says publishing the plan does not create that release."
+        }
+      ]
+    }
+  ]
+}
