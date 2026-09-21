@@ -6,13 +6,13 @@ A local, single-player helper for Windows on 4070pc. Play Baldur's Gate 3 on the
 
 This repository contains a working local prototype and a proposed friend beta. The [product concept](docs/CONCEPT.md), [source beta plan](docs/SOURCE_BETA_PLAN.md), and [mods/shared-run proposal](docs/MODS_AND_SHARED_RUNS.md) distinguish current behavior from required release work. Mod inventory and shared-run text reports are planned features, not implemented controls. A [Fable handoff prompt](docs/FABLE_HANDOFF.md) includes the local development paths. Publishing these documents does not mark the beta's acceptance checks complete.
 
-**Current scope (2026-09-05): local implementation on 4070pc.** Friend installation, polished installation instructions, fresh-install exercises, and testing on other devices are proposed later work, not requirements or gates for the current milestone. Existing source-beta acceptance lists describe future distribution readiness; they do not authorize starting that testing now. Keep current-machine checks focused on the behavior being changed and the existing mocked test suite.
+**Installation scope (2026-09-20):** the operator selected the installation and visible diagnostics board step. Its setup/launch changes and isolated installation checks use the existing development PC. This supersedes the earlier installation deferral for this step only. Testing under another Windows account or on another device, source ZIP distribution, and later board steps remain separate work. See the [installation guide](docs/INSTALLATION.md).
 
 The next release-candidate PR will organize separate implementation items into a bounded action plan with explicit scope, dependencies, file ownership, acceptance evidence, and stopping conditions. It will distinguish planned work from implemented and verified behavior. A release-candidate planning checkpoint is not a declaration that the friend beta is ready.
 
 ## Start
 
-The project environment is already installed on 4070pc. Open `launch.cmd` to start the companion. The proposed fresh-install route is `./setup.ps1` in PowerShell, which installs dependencies inside `.venv`; documenting and testing that route for friends is deferred.
+Run `./setup.ps1` with standard 64-bit CPython 3.14.x installed, then open `launch.cmd`. Setup validates Python, Tcl/Tk, pip, venv, required files, and write access before installing dependencies in `.venv`. Use `-Python 'C:/path/to/python.exe'` to select an interpreter explicitly and `-IncludeTests` to install test tools. Successful launch is quiet; a failed launch shows repair advice and a diagnostic log location. There is no global-Python launch fallback. The [installation guide](docs/INSTALLATION.md) covers selection, troubleshooting, and downloaded-script restrictions.
 
 1. Open BG3 and keep its window visible on the main display. Borderless/windowed mode is the first test target; exclusive fullscreen and HDR need game-specific testing.
 2. Keep the companion and Codex on a different display.
@@ -63,6 +63,8 @@ When launched from Codex, the companion remembers `CODEX_THREAD_ID` in ignored `
 ## Session commands
 
 Run these from this project directory, using the project Python interpreter:
+
+`doctor` reports the interpreter, dependency versions, selected storage paths, required source files, and installed Codex CLI help capabilities. It probes folder writability with temporary files but does not capture the game, inspect saves, create a bridge, expose connection credentials, or send a conversation request. CLI help availability does not establish a working conversation connection. Exit code 2 means an installation check failed; Codex availability is reported separately because the panel can open without it.
 
 ```powershell
 ./.venv/Scripts/python.exe -m bg3_helper doctor

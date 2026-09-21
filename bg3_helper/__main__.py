@@ -4,8 +4,6 @@ from pathlib import Path
 import sys
 import uuid
 
-from .core import BridgeError
-
 
 def main():
     parser = argparse.ArgumentParser(description="BG3 local capture/control bridge for an active agent session")
@@ -17,7 +15,7 @@ def main():
     sub.add_parser("status", help="Read game, input, and latest capture state")
     sub.add_parser("capture", help="Capture the visible game window without switching focus")
     sub.add_parser("stop", help="Disable input immediately")
-    sub.add_parser("doctor", help="Inspect local displays and BG3 windows; does not capture")
+    sub.add_parser("doctor", help="Check installation, storage, resources, and CLI help without capture or input")
     connect = sub.add_parser("connect", help="Link companion buttons to an existing Codex conversation")
     connect.add_argument("thread_id")
     smart = sub.add_parser("request", help="Submit one companion request to the linked conversation")
@@ -65,23 +63,18 @@ def main():
     action.add_argument("--steps", type=int)
     action.add_argument("--smart-request", dest="smart_request_id", help="Companion request authorizing this gesture")
     args = parser.parse_args()
+    if args.command == "doctor":
+        from .diagnostics import doctor
+        result = doctor(runtime=args.runtime)
+        print(json.dumps(result, indent=2))
+        return 0 if result["ok"] else 2
+    if args.command == "panel":
+        from .bootstrap import guarded_launch
+        return guarded_launch(args.runtime.resolve(), test_target=args.test_target, data=args.data)
+    from .core import BridgeError
     try:
         from .transport import request
-        if args.command == "panel":
-            from .panel import run_panel
-            run_panel(args.runtime.resolve(), args.test_target, data=args.data)
-            return
-        if args.command == "doctor":
-            from dataclasses import asdict
-            from .windows import WindowsDesktop
-            desktop = WindowsDesktop()
-            import mss
-            with mss.mss() as grabber:
-                monitors = grabber.monitors[1:]
-            result = {"platform": sys.platform, "monitors": monitors,
-                      "game_windows": [asdict(w) for w in desktop.windows()],
-                      "backend": "mss-visible-window-region", "requires_kvm": False}
-        elif args.command == "act":
+        if args.command == "act":
             body = {"request_id": args.request_id or uuid.uuid4().hex, "frame_id": args.frame,
                     "kind": args.kind}
             for name in ("x", "y", "button", "key", "steps", "smart_request_id"):
@@ -122,4 +115,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

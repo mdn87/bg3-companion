@@ -4,7 +4,7 @@
 
 Read `TECHNICAL.md` for the existing controls, command interface, input restrictions, architecture, and verification record. Read the relevant application source before changing behavior. `docs/CONCEPT.md`, `docs/SOURCE_BETA_PLAN.md`, and `docs/MODS_AND_SHARED_RUNS.md` distinguish product direction from implemented features.
 
-The next implementation milestone is local work on the existing development setup. Installation redesign, fresh installations, testing on other devices, packaging, hosted CI, retention automation, and synchronization remain deferred. Draft PR #1 carries the local plan and its task manifest. Read its current state before using it; a proposed task is not permission to run the app, inspect personal data, or start implementation.
+The operator selected the installation and visible diagnostics board step on 2026-09-20, superseding the earlier installation deferral for that step only. Its implementation and current-machine checks are recorded in `docs/INSTALLATION.md`. Testing under another Windows account or on other devices, packaging, hosted CI, retention automation, and synchronization remain deferred. Draft PR #1 carries a separate local plan and its task manifest; its proposed tasks are not permission to run the app, inspect personal data, or start later implementation.
 
 ## Keep the public entry point readable
 

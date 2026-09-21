@@ -1,7 +1,3 @@
 @echo off
-cd /d "%~dp0"
-if exist ".venv\Scripts\pythonw.exe" (
-    start "" ".venv\Scripts\pythonw.exe" -m bg3_helper panel
-) else (
-    python -m bg3_helper panel
-)
+setlocal
+start "" "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%~dp0launch.ps1"

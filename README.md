@@ -44,7 +44,7 @@ The current prototype needs Windows, a visible BG3 window, and a working connect
 
 Screenshots and play history are stored locally. **Asking for AI help also sends a screenshot preview and relevant context to Codex for analysis.** The app running on your PC doesn't make the AI part offline. Keep personal information out of screenshots or notes you send.
 
-Installation instructions and testing on other PCs are still ahead. The [technical reference](TECHNICAL.md) covers the existing development setup, controls, commands, and limitations.
+The [installation guide](docs/INSTALLATION.md) covers the current source setup and explains where to find help when launch fails. Installation and startup have been checked on the development PC; testing under another Windows account and on other PCs is still ahead. The [technical reference](TECHNICAL.md) covers controls, commands, and limitations.
 
 ## Verification
 

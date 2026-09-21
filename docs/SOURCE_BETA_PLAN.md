@@ -26,6 +26,8 @@ These requirements precede the friend beta. They are ordered for implementation;
 
 ### 1. Installation and visible diagnostics
 
+**Implementation update, 2026-09-20:** this board step has setup/launch validation, dependency-free diagnostics, visible startup failures, and duplicate-launch protection. See [installation and verification details](INSTALLATION.md). Checks use the development account, including an isolated installation with spaces and Unicode in its path. The clean-account acceptance exercise below remains part of first-user release verification; this does not declare the friend beta ready.
+
 **Files:** `setup.ps1`, `launch.cmd`, `pyproject.toml`, `bg3_helper/__main__.py`; add a small startup/diagnostics module if needed.
 
 **Observed:** [setup.ps1, line 3](https://github.com/mdn87/bg3-companion/blob/3962a7d32282b7738ba84669a22b93887cebe1ca/setup.ps1#L3) uses `python` from PATH, creates `.venv`, and installs `.[test]`; it checks exit codes but offers generic errors. [launch.cmd, line 3](https://github.com/mdn87/bg3-companion/blob/3962a7d32282b7738ba84669a22b93887cebe1ca/launch.cmd#L3) detaches `pythonw` or falls back to global Python. The current `doctor` command primarily discovers game windows.
