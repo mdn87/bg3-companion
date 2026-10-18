@@ -2,6 +2,8 @@
 
 Status: implementation plan, not a claim of release readiness. Updated 2026-09-05.
 
+**Scope update:** the [local RC action plan](LOCAL_RC_PLAN.md) now governs current implementation. Installation instructions, fresh installations, testing other devices, hosted CI, packaging, and distribution readiness below are proposed later work. They are not gates or tasks for the current local milestone. Retain this document as the future friend-beta proposal.
+
 ## Baseline and evidence
 
 The planning inspection used commit `3962a7d32282b7738ba84669a22b93887cebe1ca` on `main`. The checkout was clean and had no remote; `mdn87/bg3-companion` was public and empty. Those are pre-publication observations: this documentation publication will add the remote and push the reviewed source history. Recheck HEAD, the working tree, and concurrent development before implementing the plan.
