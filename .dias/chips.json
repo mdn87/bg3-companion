@@ -63,12 +63,12 @@
     },
     {
       "schemaVersion": 1,
-      "chipId": "bg3-companion:beta:codex-connection",
+      "chipId": "bg3-companion:pivot-decision",
       "projectId": "bg3-companion",
-      "title": "Friend-owned Codex connection with a test button",
-      "summary": "Connect and Test buttons, a capability probe, and distinct configured, queued, working, and callback-confirmed states, using the friend's own conversation and no separate API key.",
+      "title": "Decide the WoW Forever pivot",
+      "summary": "A plan retargeting the companion at WoW Forever was drafted and reviewed on 23 September. Matt decides: new repo or rename, drop game input, and which beta character to test.",
       "stage": "ready",
-      "sequence": 30,
+      "sequence": 25,
       "prereqs": [
         "bg3-companion:beta:baseline"
       ],
@@ -76,8 +76,42 @@
       "confidence": "reported",
       "aheadOfPrereqs": null,
       "timestamps": {
+        "createdAt": "2026-09-27T22:45:00.000Z",
+        "updatedAt": "2026-09-27T22:45:00.000Z"
+      },
+      "evidence": [
+        {
+          "entryId": "bg3-companion:pivot-decision:e1",
+          "at": "2026-09-27T22:45:00.000Z",
+          "kind": "created",
+          "message": "Added from the 23 September pivot plan and its review. Nothing in the plan is implemented; the decision is the only open action and it needs Matt."
+        },
+        {
+          "entryId": "bg3-companion:pivot-decision:e2",
+          "at": "2026-09-27T22:45:00.000Z",
+          "kind": "note",
+          "message": "Review blocker: treat passive screen reading as an accepted policy risk under the Battle.net EULA. Reviewer recommends a new repo cloned with history and dropping input."
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "chipId": "bg3-companion:beta:codex-connection",
+      "projectId": "bg3-companion",
+      "title": "Friend-owned Codex connection with a test button",
+      "summary": "Connect and Test buttons, a capability probe, and distinct configured, queued, working, and callback-confirmed states, using the friend's own conversation and no separate API key.",
+      "stage": "ready",
+      "sequence": 30,
+      "prereqs": [
+        "bg3-companion:beta:baseline",
+        "bg3-companion:pivot-decision"
+      ],
+      "linkedRunIds": [],
+      "confidence": "reported",
+      "aheadOfPrereqs": null,
+      "timestamps": {
         "createdAt": "2026-09-05T06:40:00.000Z",
-        "updatedAt": "2026-09-05T06:40:00.000Z"
+        "updatedAt": "2026-09-27T22:45:00.000Z"
       },
       "evidence": [
         {
@@ -85,6 +119,12 @@
           "at": "2026-09-05T06:40:00.000Z",
           "kind": "created",
           "message": "Starter board cut from the source beta plan (updated 5 September) when the project was first put on the Dias wall. Stages are as the plan reports them, not verified live."
+        },
+        {
+          "entryId": "bg3-companion:beta:codex-connection:e2",
+          "at": "2026-09-27T22:45:00.000Z",
+          "kind": "note",
+          "message": "Not started as of 27 September. Held behind the pivot decision: a move to WoW would rewrite much of the session module, so this is the next BG3 step only if BG3 continues."
         }
       ]
     },
@@ -226,6 +266,33 @@
           "at": "2026-09-05T06:40:00.000Z",
           "kind": "note",
           "message": "The plan proposes version 0.1.0b1 and says publishing the plan does not create that release."
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "chipId": "bg3-companion:wow-advice-only-core",
+      "projectId": "bg3-companion",
+      "title": "WoW Forever advice-only core",
+      "summary": "If the pivot is approved: remove all game input, retarget capture to the WoW client, rename the package, add observe and next-step skills. Likely lands in a new repo, not here.",
+      "stage": "vague",
+      "sequence": 90,
+      "prereqs": [
+        "bg3-companion:pivot-decision"
+      ],
+      "linkedRunIds": [],
+      "confidence": "unknown",
+      "aheadOfPrereqs": null,
+      "timestamps": {
+        "createdAt": "2026-09-27T22:45:00.000Z",
+        "updatedAt": "2026-09-27T22:45:00.000Z"
+      },
+      "evidence": [
+        {
+          "entryId": "bg3-companion:wow-advice-only-core:e1",
+          "at": "2026-09-27T22:45:00.000Z",
+          "kind": "created",
+          "message": "Placeholder for milestone M1 of the draft pivot plan. Shape, repo, and acceptance depend on the pivot decision; the beta client process name is still unverified."
         }
       ]
     }
