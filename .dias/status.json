@@ -11,8 +11,8 @@
   "assessedAt": "2026-09-27T22:45:00.000Z",
   "confidence": "reported",
   "currentMilestone": "First shareable Windows source beta for friends who use Codex: install, link their own conversation, bounded game input with STOP. A WoW Forever pivot plan awaits decisions.",
-  "remainingSummary": "Decide the pivot first. If BG3 continues: friend-owned connection, ZIP portability, profiles, mod report, privacy, and first-user release verification remain, none started.",
-  "nextChipId": "bg3-companion:pivot-decision",
+  "remainingSummary": "BG3 continues (pivot decided 2026-10-27). Friend-owned connection, ZIP portability, profiles, mod report, privacy, and first-user release verification remain, none started.",
+  "nextChipId": "bg3-companion:beta:codex-connection",
   "source": {
     "label": "Repository review of plans, handoffs, and commit history, 27 September 2026",
     "updatedAt": "2026-09-27"

@@ -67,7 +67,7 @@
       "projectId": "bg3-companion",
       "title": "Decide the WoW Forever pivot",
       "summary": "A plan retargeting the companion at WoW Forever was drafted and reviewed on 23 September. Matt decides: new repo or rename, drop game input, and which beta character to test.",
-      "stage": "ready",
+      "stage": "done",
       "sequence": 25,
       "prereqs": [
         "bg3-companion:beta:baseline"
@@ -77,7 +77,7 @@
       "aheadOfPrereqs": null,
       "timestamps": {
         "createdAt": "2026-09-27T22:45:00.000Z",
-        "updatedAt": "2026-09-27T22:45:00.000Z"
+        "updatedAt": "2026-10-28T03:35:00.000Z"
       },
       "evidence": [
         {
@@ -91,6 +91,12 @@
           "at": "2026-09-27T22:45:00.000Z",
           "kind": "note",
           "message": "Review blocker: treat passive screen reading as an accepted policy risk under the Battle.net EULA. Reviewer recommends a new repo cloned with history and dropping input."
+        },
+        {
+          "entryId": "bg3-companion:pivot-decision:e3",
+          "at": "2026-10-28T03:35:00.000Z",
+          "kind": "stage-change",
+          "message": "Decided by Matt on 2026-10-27: BG3 Companion stays wanted and continues here. The WoW Forever retarget already lives in its own project, wow-forever-helper."
         }
       ]
     },
