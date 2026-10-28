@@ -15,3 +15,6 @@ play-sessions/
 !.env.*.template
 .lugos-wip/
 *.sync-conflict-*
+
+# Local audit receipts
+.lugos-audit/
